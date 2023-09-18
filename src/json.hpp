@@ -57,6 +57,21 @@ namespace json {
 			return std::get<json_array>(*this)[_Index];
 		}
 
+		template <class _Ty>
+		inline _Ty& get() requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+			return std::get<_Ty>(*this);
+		}
+
+		template <class _Ty>
+		inline const _Ty& get() const requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+			return std::get<_Ty>(*this);
+		}
+
+		template <class _Ty>
+		inline bool is() const requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+			return std::holds_alternative<_Ty>(*this);
+		}
+
 		inline void add(const json& _Value) {
 			if (std::holds_alternative<json_null>(*this)) {
 				*this = json_array();
@@ -310,7 +325,7 @@ namespace json {
 					json _El = _Parse_element(_Idx);
 					if (this->_Parsing_error) return _Map;
 					//if (std::holds_alternative<json_null>) _Handle_error(_Idx, "", '}');
-					_Map.insert(move(_Key), move(_El));
+					_Map.insert(std::move(_Key), std::move(_El));
 
 					_Skip_whitespaces(_Idx);
 					if (_Data[_Idx] == '}') break; // end of dictionary
@@ -335,7 +350,7 @@ namespace json {
 					if (_Data[_Idx] == ']') break; // end of array
 
 					json _El = _Parse_element(_Idx);
-					_Array.push_back(move(_El));
+					_Array.push_back(std::move(_El));
 					_Skip_whitespaces(_Idx);
 
 					if (_Data[_Idx] == ']') break; // end of array
