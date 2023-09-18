@@ -15,7 +15,7 @@ int main()
         "yellows" : [ "cornsilk", "blanched almond", "yellow", "dark yellow" ],
         "oranges" : [ "orange", "dark orange", "coral" ],
     },
-    "numbers" : [ 1, 2.2, 3, 4, 5, 6, 7, 8, 9.3, {} ],
+    "numbers" : [ 1, 2.2, 3, 4, 5, 6, 7, 8, 9.3, {} ]
 }
 )";
     try {

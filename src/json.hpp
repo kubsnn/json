@@ -93,9 +93,7 @@ namespace json {
 			std::string _Str;
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Str += '"';
-				_Str += std::get<std::string>(*this);
-				_Str += '"';
+				_Write_string_to_string(std::get<std::string>(*this), _Str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
@@ -169,7 +167,7 @@ namespace json {
 
 		inline friend std::ostream& operator<<(std::ostream& _Os, const json& _This) {
 			size_t _Idx = _This.index();
-			if (_Idx == 1) _Os << '"' << std::get<std::string>(_This) << '"';
+			if (_Idx == 1) _Os << '"' << _This._Escape_string(std::get<std::string>(_This)) << '"';
 			else if (_Idx == 2) _Os << std::get<double>(_This);
 			else if (_Idx == 3) _Os << (std::get<bool>(_This) ? "true" : "false");
 			else if (_Idx == 4) {
@@ -206,14 +204,12 @@ namespace json {
 			throw std::runtime_error("invalid type");
 		}
 
-		inline std::string _To_string(int _Depth, int _Indent) const {
+		inline std::string _To_string(const int _Depth, const int _Indent) const {
 			std::string _Str;
 
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Str += '"';
-				_Str += std::get<std::string>(*this);
-				_Str += '"';
+				_Write_string_to_string(std::get<std::string>(*this), _Str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
@@ -225,44 +221,91 @@ namespace json {
 			}
 			else if (_Idx == 4) {
 				auto& _Array = std::get<json_array>(*this);
-				_Str += "[  ";
-				for (const auto& v : _Array) {
-					_Str += '\n';
-					for (int i = 0; i < _Depth * _Indent; ++i) _Str += ' ';
-					_Str += v._To_string(_Depth + 1, _Indent);
-					_Str += ", ";
-				}
-				_Str.pop_back();
-				_Str.pop_back();
-				if (!_Array.empty()) {
-					_Str += '\n';
-					for (int i = 0; i < (_Depth - 1) * _Indent; ++i) _Str += ' ';
-				}
-				_Str += "]";
+				_Write_array_to_string(_Array, _Depth, _Indent, _Str);
 			}
 			else if (_Idx == 5) {
 				auto& _Dict = std::get<json_map>(*this);
-				_Str += "{  ";
-				for (const auto& [k, v] : _Dict) {
-					_Str += '\n';
-					for (int i = 0; i < _Depth * _Indent; ++i) _Str += ' ';
-					_Str += '"';
-					_Str += k;
-					_Str += "\" : ";
-					_Str += v._To_string(_Depth + 1, _Indent);
-					_Str += ", ";
-				}
-				_Str.pop_back();
-				_Str.pop_back();
-				if (!_Dict.empty()) {
-					_Str += '\n';
-					for (int i = 0; i < (_Depth - 1) * _Indent; ++i) _Str += ' ';
-				}
-				_Str += "}";
+				_Write_dict_to_string(_Dict, _Depth, _Indent, _Str);
 			}
 			else _Str += "null";
 
 			return _Str;
+		}
+
+		inline void _Write_dict_to_string(const json_map& _Dict, const int _Depth, const int _Indent, std::string& _Out) const {
+			_Out += "{  ";
+			for (const auto& [k, v] : _Dict) {
+				_Out += '\n';
+				for (int i = 0; i < _Depth * _Indent; ++i) _Out += ' ';
+				_Out += '"';
+				_Out += k;
+				_Out += "\" : ";
+				_Out += v._To_string(_Depth + 1, _Indent);
+				_Out += ", ";
+			}
+			_Out.pop_back();
+			_Out.pop_back();
+			if (!_Dict.empty()) {
+				_Out += '\n';
+				for (int i = 0; i < (_Depth - 1) * _Indent; ++i) _Out += ' ';
+			}
+			_Out += "}";
+		}
+
+		inline void _Write_array_to_string(const json_array& _Array, const int _Depth, const int _Indent, std::string& _Out) const {
+			_Out += "[  ";
+			for (const auto& v : _Array) {
+				_Out += '\n';
+				for (int i = 0; i < _Depth * _Indent; ++i) _Out += ' ';
+				_Out += v._To_string(_Depth + 1, _Indent);
+				_Out += ", ";
+			}
+			_Out.pop_back();
+			_Out.pop_back();
+			if (!_Array.empty()) {
+				_Out += '\n';
+				for (int i = 0; i < (_Depth - 1) * _Indent; ++i) _Out += ' ';
+			}
+			_Out += "]";
+		}
+
+		inline void _Write_string_to_string(const std::string& _S, std::string& _Out) const {
+			if (!_Requires_rewrite(_S)) {
+				_Out += '"';
+				_Out += _S;
+				_Out += '"';
+				return;
+			}
+			
+			_Out += '"';
+			_Out += _Escape_string(_S);
+			_Out += '"';
+		}
+
+		inline std::string _Escape_string(const std::string& _S) const {
+			std::string _Str;
+			_Str.reserve((size_t)(_S.size() * 1.1f)); // we know there is at least one escape character
+			for (const char& c : _S) {
+				if (c == '\b') _Str += "\\b";
+				else if (c == '\f') _Str += "\\f";
+				else if (c == '\n') _Str += "\\n";
+				else if (c == '\r') _Str += "\\r";
+				else if (c == '\t') _Str += "\\t";
+				else if (c == '\\') _Str += "\\\\";
+				else if (c == '\"') _Str += "\\\"";
+				else _Str += c;
+			}
+			return _Str;
+		}
+
+		inline bool _Requires_rewrite(const std::string& _S) const {
+			static constexpr char _Escape_chars[] = {'\b', '\f', '\n', '\r', '\t', '\\', '\"'};
+			for (const char& c : _S) {
+				for (const char& e : _Escape_chars) {
+					if (c == e) return true;
+				}
+			}
+			return false;
 		}
 
 		class json_parser {
@@ -370,12 +413,18 @@ namespace json {
 				size_t _Idx = _Where;
 				std::string _S;
 				while (_Idx < _Data.length() && _Data[_Idx] != '"') {
-					_S += _Data[_Idx];
-					++_Idx;
-					if (_Data[_Idx - 1] == '\\') {
-						_S += _Data[_Idx];
-						++_Idx;
+					if (_Data[_Idx] == '\\') {
+						char _Escaped_char = _Decode_escape_char(_Data[++_Idx]);
+						if (_Escaped_char == -1) { // invalid escape char
+							_Handle_error(_Idx, "Invalid escape char to decode!", '"');
+							continue;
+						}
+						_S += _Escaped_char;
 					}
+					else {
+						_S += _Data[_Idx];
+					}
+					++_Idx;
 				}
 				_Where = _Idx + 1;
 
@@ -443,6 +492,20 @@ namespace json {
 					++_Idx;
 				_Where = _Idx;
 			}
+			
+			inline char _Decode_escape_char(char _C) {
+				switch (_C) {
+				case 'b': return '\b';
+				case 'f': return '\f';
+				case 'n': return '\n';
+				case 'r': return '\r';
+				case 't': return '\t';
+				case '\\': return '\\';
+				case '/': return '/';
+				case '"': return '"';
+				default: return -1;
+				}
+			}
 
 			inline void _Try_skip_error(size_t& _Where, char _Expected_char1, char _Expected_char2) {
 				size_t _Idx = _Where;
@@ -506,7 +569,6 @@ namespace json {
 				_Error_message = _Build_error(_Where, _Message);
 				_Parsing_error = true;
 				if (_Throw) throw std::runtime_error(_Error_message);
-
 			}
 
 			inline std::string _Build_error(size_t _Error_idx, std::string_view _Info) {
@@ -518,7 +580,9 @@ namespace json {
 				char _Buff[64];
 				sprintf_s(_Buff, "%u", (unsigned int)(_Error_idx - _Line_begin));
 
-				std::string _Msg = "Unexpected error at ";
+				std::string _Msg;
+				_Msg.reserve(128 + _Info.length());
+				_Msg += "Unexpected error at ";
 				_Msg += _Buff;
 				_Msg += " character:\n  ";
 				_Msg += _Info;
@@ -559,15 +623,13 @@ namespace json {
 			}
 
 			inline size_t _Line_begin_index(size_t _Error_idx) {
-				size_t _Line_begin = _Error_idx;
-				for (; _Line_begin > 0 && _Data[_Line_begin] != '\n'; --_Line_begin);
-				return _Line_begin + 1;
+				for (; _Error_idx > 0 && _Data[_Error_idx] != '\n'; --_Error_idx);
+				return _Error_idx + 1;
 			}
 
 			inline size_t _Line_end_index(size_t _Error_idx) {
-				size_t _Line_end = _Error_idx;
-				for (; _Line_end < _Data.length() && _Data[_Line_end] != '\n'; ++_Line_end);
-				return _Line_end;
+				for (; _Error_idx < _Data.length() && _Data[_Error_idx] != '\n'; ++_Error_idx);
+				return _Error_idx;
 			}
 
 			bool _Ignore_errors;

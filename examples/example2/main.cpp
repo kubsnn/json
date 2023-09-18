@@ -12,9 +12,9 @@ int main()
     std::string_view json_to_parse = R"(
 {"name" :     "John",
     "grades":{
-    "Math" : [ 5 , 4  , 5 ],
-    "Physics":[1,   "missing",2]
-},"huh" : null, "mhmm" : [[[],{}], {":D": ":("}]
+    "Math" : 4,
+    "Physics":[1,   "missing"]
+},"huh" : null, "mhmm" :  {":D": ":("}}
 	)";
     
     auto json = json_t::parse(json_to_parse);
@@ -26,26 +26,15 @@ int main()
 {
   "name" : "John",
   "grades" : {
-    "Math" : [
-      5,
-      4,
-      5
-    ],
+    "Math" : 4,
     "Physics" : [
       1,
-      "missing",
-      2
+      "missing"
     ]
   },
   "huh" : null,
-  "mhmm" : [
-    [
-      [],
-      {}
-    ],
-    {
-      ":D" : ":("
-    }
-  ]
+  "mhmm" : {
+    ":D" : ":("
+  }
 }
 */
