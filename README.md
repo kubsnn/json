@@ -7,6 +7,7 @@ This is a JSON parser project that aims to provide a lightweight and efficient J
 - Parse JSON data into native data structures.
 - Serialize native data structures into JSON format.
 - Support for handling various data types: strings, numbers, booleans, objects (dictionaries), arrays, and null values.
+- Support for escape characters.
 - Error handling for invalid JSON input.
 
 ## Examples
@@ -49,7 +50,7 @@ int main()
     "Math" : 4,
     "Physics":[1,   "missing"]
 },"huh" : null, "mhmm" :  {":D": ":("}}
-	)";
+    )";
     
     auto json = json_t::parse(json_to_parse);
     std::cout << json.to_pretty_string(2) << std::endl; 
@@ -70,6 +71,44 @@ int main()
     ":D" : ":("
   }
 }
+*/
+```
+Retrieving data from json object
+```cpp
+#include <iostream> 
+#include "../../src/json.hpp"
+
+using json_t = json::json;
+
+int main()
+{
+    std::string_view json_to_parse = R"(
+{
+    "name" : "Jack",
+    "age" : 20,
+    "children" : [ "\\\\Alan", "\\\\Rose" ]
+}
+    )";
+    auto json = json_t::parse(json_to_parse);
+    
+    std::cout << json["children"][0] << std::endl; // print in json style
+    auto& first_child_ref = json["children"][0].get<std::string>();
+    first_child_ref = "Jac\nk";
+    
+    const auto& children = json["children"].get<json::array>();
+    for (const auto& child : children) {
+        if (child.is<std::string>()) {
+            std::cout << child.get<std::string>() << std::endl;
+        }
+    }
+}
+
+/*
+// Output:
+"\\\\Alan"
+Jac
+k
+\\Rose
 */
 ```
 
