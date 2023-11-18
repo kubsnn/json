@@ -6,11 +6,11 @@
 #include <iostream>
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
-    json_t json = json::dictionary();
+    json json = json::dictionary();
 	json["name"] = "John";
 	json["age"] = 20;
 	json["isMale"] = true;

@@ -8,7 +8,7 @@
 #include <iostream> 
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
@@ -19,7 +19,7 @@ int main()
     "children" : [ "\\\\Alan", "\\\\Rose" ]
 }
 )";
-	auto json = json_t::parse(json_to_parse);
+	auto json = json::parse(json_to_parse);
     
 	std::cout << json["children"][0] << std::endl; // print in json style
 	auto& first_child_ref = json["children"][0].get<std::string>();

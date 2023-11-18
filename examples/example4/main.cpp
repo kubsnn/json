@@ -4,7 +4,7 @@
 #include <iostream>
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
@@ -19,7 +19,7 @@ int main()
 }
 )";
     try {
-        auto json = json_t::parse(json_with_error);
+        auto json = json::parse(json_with_error);
 	}
 	catch (const std::runtime_error& e) {
 		std::cout << e.what() << std::endl;

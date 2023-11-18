@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-namespace json {
+namespace jaszyk {
 	template <class _TKey, class _TValue>
 	class flatmap {
 	public:
@@ -32,7 +32,7 @@ namespace json {
 
 		template <class ..._TArgs>
 		inline void emplace(const _TKey& _Key, _TArgs&&... _Vals) {
-			_Data.emplace_back(_Key, ::forward<_TArgs>(_Vals)...);
+			_Data.emplace_back(_Key, std::forward<_TArgs>(_Vals)...);
 		}
 
 		inline _TValue& operator[](const _TKey& _Key) {
@@ -53,6 +53,33 @@ namespace json {
 			}
 
 			return _Data.end()->second;
+		}
+
+		inline _TValue& at(const _TKey& _Key) {
+			for (auto& _Pair : _Data) {
+				if (_Pair.first == _Key) {
+					return _Pair.second;
+				}
+			}
+			throw std::out_of_range("Key not found!");
+		}
+
+		inline const _TValue& at(const _TKey& _Key) const {
+			for (auto& _Pair : _Data) {
+				if (_Pair.first == _Key) {
+					return _Pair.second;
+				}
+			}
+			throw std::out_of_range("Key not found!");
+		}
+
+		inline void erase(const _TKey& _Key) {
+			for (auto _It = _Data.begin(); _It != _Data.end(); ++_It) {
+				if (_It->first == _Key) {
+					_Data.erase(_It);
+					return;
+				}
+			}
 		}
 
 		inline size_t size() const {
@@ -80,6 +107,24 @@ namespace json {
 		}
 
 		inline const_iterator end() const {
+			return _Data.end();
+		}
+
+		inline iterator find(const _TKey& _Key) {
+			for (auto _It = _Data.begin(); _It != _Data.end(); ++_It) {
+				if (_It->first == _Key) {
+					return _It;
+				}
+			}
+			return _Data.end();
+		}
+
+		inline const_iterator find(const _TKey& _Key) const {
+			for (auto _It = _Data.begin(); _It != _Data.end(); ++_It) {
+				if (_It->first == _Key) {
+					return _It;
+				}
+			}
 			return _Data.end();
 		}
 

@@ -5,7 +5,7 @@
 #include <iostream>
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
@@ -17,7 +17,7 @@ int main()
 },"huh" : null, "mhmm" :  {":D": ":("}}
 	)";
     
-    auto json = json_t::parse(json_to_parse);
+    auto json = json::parse(json_to_parse);
     std::cout << json.to_pretty_string(2) << std::endl;
 }
 

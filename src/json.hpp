@@ -8,15 +8,15 @@
 #include <variant>
 #include "flatmap.hpp"
 
-namespace json {
+namespace jaszyk {
 	template <class...>
 	constexpr size_t index_of = -255;
 
-	template <class _T, class... _Ts>
-	constexpr size_t index_of<_T, _T, _Ts...> = 0;
+	template <class T, class... Ts>
+	constexpr size_t index_of<T, T, Ts...> = 0;
 
-	template <class _T, class _U, class... _Ts>
-	constexpr size_t index_of<_T, _U, _Ts...> = 1 + index_of<_T, _Ts...>;
+	template <class T, class U, class... Ts>
+	constexpr size_t index_of<T, U, Ts...> = 1 + index_of<T, Ts...>;
 
 	struct json_null {};
 
@@ -29,22 +29,28 @@ namespace json {
 		using base = std::variant<json_null, std::string, double, bool, json_array, json_map>;
 		using base::base;
 	public:
-		inline json(const char* _Str)
-			: base(std::string(_Str))
+		using dictionary = json_map;
+		using object = dictionary;
+		using array = json_array;
+		using number = double;
+		using string = std::string;
+
+		inline json(const char* str)
+			: base(std::string(str))
 		{ }
 
-		inline json(int _Val)
-			: base(double(_Val))
+		inline json(int val)
+			: base(double(val))
 		{ }
 
-		inline json& operator[](const std::string& _Key) {
+		inline json& operator[](const std::string& key) {
 			_Check_type<json_map>();
-			return std::get<json_map>(*this)[_Key];
+			return std::get<json_map>(*this)[key];
 		}
 
-		inline const json& operator[](const std::string& _Key) const {
+		inline const json& operator[](const std::string& key) const {
 			_Check_type<json_map>();
-			return std::get<json_map>(*this)[_Key];
+			return std::get<json_map>(*this)[key];
 		}
 
 		inline json& operator[](size_t _Index) {
@@ -58,17 +64,17 @@ namespace json {
 		}
 
 		template <class _Ty>
-		inline _Ty& get() requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+		inline _Ty& get() {
 			return std::get<_Ty>(*this);
 		}
 
 		template <class _Ty>
-		inline const _Ty& get() const requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+		inline const _Ty& get() const {
 			return std::get<_Ty>(*this);
 		}
 
 		template <class _Ty>
-		inline bool is() const requires (std::_Is_any_of_v<_Ty, json_null, std::string, double, bool, json_array, json_map>) {
+		inline bool is() const {
 			return std::holds_alternative<_Ty>(*this);
 		}
 
@@ -90,55 +96,55 @@ namespace json {
 		}
 
 		inline std::string to_string() const {
-			std::string _Str;
+			std::string str;
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Write_string_to_string(std::get<std::string>(*this), _Str);
+				_Write_string_to_string(std::get<std::string>(*this), str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
-				sprintf_s(_Buff, "%lg", std::get<double>(*this));
-				_Str += _Buff;
+				sprintf(_Buff, "%lg", std::get<double>(*this));
+				str += _Buff;
 			}
 			else if (_Idx == 3) {
-				_Str += std::get<bool>(*this) ? "true" : "false";
+				str += std::get<bool>(*this) ? "true" : "false";
 			}
 			else if (_Idx == 4) {
 				auto& _Array = std::get<json_array>(*this);
 				if (_Array.empty()) {
-					_Str += "[]";
-					return _Str;
+					str += "[]";
+					return str;
 				}
-				_Str += "[ ";
+				str += "[ ";
 				for (const auto& v : _Array) {
-					_Str += v.to_string();
-					_Str += ", ";
+					str += v.to_string();
+					str += ", ";
 				}
-				_Str.pop_back();
-				_Str.pop_back();
-				_Str += " ]";
+				str.pop_back();
+				str.pop_back();
+				str += " ]";
 			}
 			else if (_Idx == 5) {
 				auto& _Dict = std::get<json_map>(*this);
 				if (_Dict.empty()) {
-					_Str += "{}";
-					return _Str;
+					str += "{}";
+					return str;
 				}
-				_Str += "{ ";
+				str += "{ ";
 				for (const auto& [k, v] : _Dict) {
-					_Str += '"';
-					_Str += k;
-					_Str += "\" : ";
-					_Str += v.to_string();
-					_Str += ", ";
+					str += '"';
+					str += k;
+					str += "\" : ";
+					str += v.to_string();
+					str += ", ";
 				}
-				_Str.pop_back();
-				_Str.pop_back();
-				_Str += " }";
+				str.pop_back();
+				str.pop_back();
+				str += " }";
 			}
-			else _Str += "null";
+			else str += "null";
 
-			return _Str;
+			return str;
 		}
 
 		// Throws std::runtime_error if parsing fails
@@ -172,6 +178,10 @@ namespace json {
 			else if (_Idx == 3) _Os << (std::get<bool>(_This) ? "true" : "false");
 			else if (_Idx == 4) {
 				auto& _Array = std::get<json_array>(_This);
+				if (_Array.empty()) {
+					_Os << "[]";
+					return _Os;
+				}
 				_Os << "[ ";
 				for (const auto& v : _Array) {
 					_Os << v << ", ";
@@ -180,6 +190,10 @@ namespace json {
 			}
 			else if (_Idx == 5) {
 				auto& _Dict = std::get<json_map>(_This);
+				if (_Dict.empty()) {
+					_Os << "{}";
+					return _Os;
+				}
 				_Os << "{ ";
 				for (const auto& [k, v] : _Dict) {
 					_Os << '"' << k << "\" : " << v << ", ";
@@ -205,31 +219,31 @@ namespace json {
 		}
 
 		inline std::string _To_string(const int _Depth, const int _Indent) const {
-			std::string _Str;
+			std::string str;
 
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Write_string_to_string(std::get<std::string>(*this), _Str);
+				_Write_string_to_string(std::get<std::string>(*this), str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
-				sprintf_s(_Buff, "%lg", std::get<double>(*this));
-				_Str += _Buff;
+				sprintf(_Buff, "%lg", std::get<double>(*this));
+				str += _Buff;
 			}
 			else if (_Idx == 3) {
-				_Str += std::get<bool>(*this) ? "true" : "false";
+				str += std::get<bool>(*this) ? "true" : "false";
 			}
 			else if (_Idx == 4) {
 				auto& _Array = std::get<json_array>(*this);
-				_Write_array_to_string(_Array, _Depth, _Indent, _Str);
+				_Write_array_to_string(_Array, _Depth, _Indent, str);
 			}
 			else if (_Idx == 5) {
 				auto& _Dict = std::get<json_map>(*this);
-				_Write_dict_to_string(_Dict, _Depth, _Indent, _Str);
+				_Write_dict_to_string(_Dict, _Depth, _Indent, str);
 			}
-			else _Str += "null";
+			else str += "null";
 
-			return _Str;
+			return str;
 		}
 
 		inline void _Write_dict_to_string(const json_map& _Dict, const int _Depth, const int _Indent, std::string& _Out) const {
@@ -283,19 +297,19 @@ namespace json {
 		}
 
 		inline std::string _Escape_string(const std::string& _S) const {
-			std::string _Str;
-			_Str.reserve((size_t)(_S.size() * 1.1f)); // we know there is at least one escape character
+			std::string str;
+			str.reserve((size_t)(_S.size() * 1.1f)); // we know there is at least one escape character
 			for (const char& c : _S) {
-				if (c == '\b') _Str += "\\b";
-				else if (c == '\f') _Str += "\\f";
-				else if (c == '\n') _Str += "\\n";
-				else if (c == '\r') _Str += "\\r";
-				else if (c == '\t') _Str += "\\t";
-				else if (c == '\\') _Str += "\\\\";
-				else if (c == '\"') _Str += "\\\"";
-				else _Str += c;
+				if (c == '\b') str += "\\b";
+				else if (c == '\f') str += "\\f";
+				else if (c == '\n') str += "\\n";
+				else if (c == '\r') str += "\\r";
+				else if (c == '\t') str += "\\t";
+				else if (c == '\\') str += "\\\\";
+				else if (c == '\"') str += "\\\"";
+				else str += c;
 			}
-			return _Str;
+			return str;
 		}
 
 		inline bool _Requires_rewrite(const std::string& _S) const {
@@ -311,7 +325,7 @@ namespace json {
 		class json_parser {
 		public:
 			inline json_parser(std::string_view _Json)
-				: _Data(_Json), _Ignore_errors(false)
+				: _Ignore_errors(false), _Data(_Json)
 			{ }
 
 			inline json parse() {
@@ -357,7 +371,7 @@ namespace json {
 					if (_Data[_Idx] == '}') break; // end of dictionary
 
 					if (_Data[_Idx] != '"') _Handle_error(_Idx, "Expected '\"'", '"');
-					std::string _Key = _Parse_string(++_Idx);
+					std::string key = _Parse_string(++_Idx);
 					if (_Data[_Idx - 1] != '"') _Handle_error(--_Idx, "Expected '\"'", '"');
 
 					_Skip_whitespaces(_Idx);
@@ -368,7 +382,7 @@ namespace json {
 					json _El = _Parse_element(_Idx);
 					if (this->_Parsing_error) return _Map;
 					//if (std::holds_alternative<json_null>) _Handle_error(_Idx, "", '}');
-					_Map.insert(std::move(_Key), std::move(_El));
+					_Map.insert(std::move(key), std::move(_El));
 
 					_Skip_whitespaces(_Idx);
 					if (_Data[_Idx] == '}') break; // end of dictionary
@@ -434,22 +448,22 @@ namespace json {
 			inline double _Parse_double(size_t& _Where) {
 				size_t _Idx = _Where;
 
-				double _Val = 0.0;
+				double val = 0.0;
 				while (_Idx < _Data.length() && '0' <= _Data[_Idx] && _Data[_Idx] <= '9') {
-					_Val = _Val * 10.0 + (double)(_Data[_Idx] - '0');
+					val = val * 10.0 + (double)(_Data[_Idx] - '0');
 					++_Idx;
 				}
 
 				if (_Idx < _Data.length() && _Data[_Idx] == '.') {
 					double _Dec = 0.1;
 					while (++_Idx < _Data.length() && '0' <= _Data[_Idx] && _Data[_Idx] <= '9') {
-						_Val += _Dec * (double)(_Data[_Idx] - '0');
+						val += _Dec * (double)(_Data[_Idx] - '0');
 						_Dec *= 0.1;
 					}
 				}
 
 				_Where = _Idx;
-				return _Val;
+				return val;
 			}
 
 			inline bool _Parse_bool(size_t& _Where) {
@@ -578,7 +592,7 @@ namespace json {
 				size_t _Line = _Get_line_number(_Error_idx);
 
 				char _Buff[64];
-				sprintf_s(_Buff, "%u", (unsigned int)(_Error_idx - _Line_begin));
+				sprintf(_Buff, "%u", (unsigned int)(_Error_idx - _Line_begin));
 
 				std::string _Msg;
 				_Msg.reserve(128 + _Info.length());
@@ -588,7 +602,7 @@ namespace json {
 				_Msg += _Info;
 				_Msg += "\n>>>At line ";
 
-				sprintf_s(_Buff, "%u", (unsigned int)_Line);
+				sprintf(_Buff, "%u", (unsigned int)_Line);
 				_Msg += _Buff;
 				_Msg += ": \n>>>";
 
@@ -638,8 +652,4 @@ namespace json {
 			std::string _Error_message;
 		};
 	};
-
-
-	using dictionary = json_map;
-	using array = json_array;
 }
