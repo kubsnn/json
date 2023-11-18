@@ -114,9 +114,9 @@ k
 
 ## Requirements
 
-- C++20 compiler
+- C++17 compiler
 - Attached flatmap.hpp
-- Currently tested only on Visual Studio
+- Currently tested on Visual Studio 2022 and GCC13
 
 ### Installation
 
