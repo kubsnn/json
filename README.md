@@ -11,7 +11,9 @@ This is a JSON parser project that aims to provide a lightweight and efficient J
 - Error handling for invalid JSON input.
 
 ## Examples
+
 Inserting new data into a json
+
 ```cpp
 #include <iostream>
 #include "../../src/json.hpp"
@@ -35,7 +37,62 @@ int main()
 // Output:
 // { "name" : "John", "age" : 20, "isMale" : true, "friends" : [ "Adam", "Eva" ] }
 ```
+
+Using initializer list for creating json
+
+```cpp
+#include <iostream>
+#include "../../src/json.hpp"
+
+using json = jaszyk::json;
+
+int main()
+{
+	json data = {
+		{ "username", "kubsn" },
+		{ "friends", 
+			{
+				{ "name", "krabbens" }
+			}
+		},
+		{ "repos", json::array(
+			{
+				"json",
+				"consolecolors",
+				false,
+				"tcp-chat"
+			})
+		},
+		{ "stars", 0 },
+		{ "forks", json::null() },
+		{ "is_admin", false }
+	};
+
+	std::cout << data.dump(true) << std::endl;
+}
+
+/*
+// OUTPUT:
+{
+	"username" : "kubsn",
+	"friends" : {
+		"name" : "krabbens"
+	},
+	"repos" : [
+		"json",
+		"consolecolors",
+		false,
+		"tcp-chat"
+	],
+	"stars" : 0,
+	"forks" : null,
+	"is_admin" : false
+}
+*/
+```
+
 Parsing json-string into a json
+
 ```cpp
 #include <iostream>
 #include "../../src/json.hpp"
@@ -73,7 +130,9 @@ int main()
 }
 */
 ```
+
 Retrieving data from json object
+
 ```cpp
 #include <iostream> 
 #include "../../src/json.hpp"

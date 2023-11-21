@@ -19,6 +19,7 @@ int main()
 			{
 				"json",
 				"consolecolors",
+				false,
 				"tcp-chat"
 			})
 		},
@@ -40,6 +41,7 @@ int main()
 	"repos" : [
 		"json",
 		"consolecolors",
+		false,
 		"tcp-chat"
 	],
 	"stars" : 0,
