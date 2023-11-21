@@ -6,7 +6,7 @@
 */
 
 #include <iostream> 
-#include "../../src/json.hpp"
+#include "../../include/json.hpp"
 
 using json = jaszyk::json;
 

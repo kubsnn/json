@@ -132,8 +132,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\flatmap.hpp" />
-    <ClInclude Include="..\..\src\json.hpp" />
+    <ClInclude Include="..\..\include\flatmap.hpp" />
+    <ClInclude Include="..\..\include\json.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

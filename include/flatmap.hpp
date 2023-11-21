@@ -131,6 +131,10 @@ namespace jaszyk {
 			return _Data.end();
 		}
 
+		inline bool contains(const _TKey& _Key) const {
+			return find(_Key) != _Data.end();
+		}
+
 	private:
 		std::vector<value_type> _Data;
 	};

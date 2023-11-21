@@ -2,7 +2,7 @@
 	This example shows usage of std::initializer_list constructor
 */
 #include <iostream>
-#include "../../src/json.hpp"
+#include "../../include/json.hpp"
 
 using json = jaszyk::json;
 
