@@ -16,20 +16,20 @@ Inserting new data into a json
 #include <iostream>
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
     // easy inserting data into the json variable
-    json_t json = json::dictionary();
-    json["name"] = "John";
-    json["age"] = 20;
-    json["isMale"] = true;
-    json["friends"] = json::array();
-    json["friends"].add("Adam");
-    json["friends"].add("Eva");
+    json j = json::object();
+    j["name"] = "John";
+    j["age"] = 20;
+    j["isMale"] = true;
+    j["friends"] = json::array();
+    j["friends"].add("Adam");
+    j["friends"].add("Eva");
 
-    std::cout << json << std::endl;     // alternatively:
+    std::cout << j << std::endl;     // alternatively:
                                         // std::cout << json.to_string() << std::endl;
 }
 // Output:
@@ -40,7 +40,7 @@ Parsing json-string into a json
 #include <iostream>
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
@@ -52,8 +52,8 @@ int main()
 },"huh" : null, "mhmm" :  {":D": ":("}}
     )";
     
-    auto json = json_t::parse(json_to_parse);
-    std::cout << json.to_pretty_string(2) << std::endl; 
+    auto j = json::parse(json_to_parse);
+    std::cout << j.to_pretty_string(2) << std::endl; 
 }
 /*
 // Output:
@@ -78,7 +78,7 @@ Retrieving data from json object
 #include <iostream> 
 #include "../../src/json.hpp"
 
-using json_t = json::json;
+using json = jaszyk::json;
 
 int main()
 {
@@ -89,13 +89,13 @@ int main()
     "children" : [ "\\\\Alan", "\\\\Rose" ]
 }
     )";
-    auto json = json_t::parse(json_to_parse);
+    auto j = json_t::parse(json_to_parse);
     
-    std::cout << json["children"][0] << std::endl; // print in json style
-    auto& first_child_ref = json["children"][0].get<std::string>();
+    std::cout << j["children"][0] << std::endl; // print in json style
+    auto& first_child_ref = j["children"][0].get<std::string>();
     first_child_ref = "Jac\nk";
     
-    const auto& children = json["children"].get<json::array>();
+    const auto& children = j["children"].get<json::array>();
     for (const auto& child : children) {
         if (child.is<std::string>()) {
             std::cout << child.get<std::string>() << std::endl;

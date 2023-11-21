@@ -147,6 +147,14 @@ namespace jaszyk {
 			return str;
 		}
 
+		inline std::string dumps() const {
+			return to_string();
+		}
+
+		inline std::string dumps(bool _Pretty_print) const {
+			return _Pretty_print ? to_pretty_string() : to_string();
+		}
+
 		// Throws std::runtime_error if parsing fails
 		inline static json parse(std::string_view _Json) {
 			return parse(_Json, false);
@@ -159,6 +167,22 @@ namespace jaszyk {
 			_Parsing_error = _Parser.error();
 			_Error_message = move(_Parser.error_message());
 			return _Data;
+		}
+
+		inline static json loads(std::string_view _Json) {
+			return parse(_Json, false);
+		}
+
+		inline static json loads(std::string_view _Json, bool _Try_ignore_small_errors) {
+			return parse(_Json, _Try_ignore_small_errors);
+		}
+
+		inline static json dumps(const json& _Data) {
+			return _Data.to_string();
+		}
+
+		inline static json dumps(const json& _Data, bool _Pretty_print) {
+			return _Pretty_print ? _Data.to_pretty_string() : _Data.to_string();
 		}
 
 		// Returns true if parsing failed
