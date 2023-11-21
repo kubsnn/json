@@ -14,6 +14,9 @@ namespace jaszyk {
 		inline flatmap() = default;
 		inline flatmap(const flatmap& _Other) = default;
 		inline flatmap(flatmap&& _Other) noexcept = default;
+		inline flatmap(std::initializer_list<value_type> _Init) : _Data(_Init) {}
+
+		inline ~flatmap() = default;
 
 		inline flatmap& operator=(const flatmap& _Other) = default;
 		inline flatmap& operator=(flatmap&& _Other) noexcept = default;

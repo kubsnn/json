@@ -7,6 +7,7 @@
 #include <vector>
 #include <variant>
 #include "flatmap.hpp"
+#include <initializer_list>
 
 namespace jaszyk {
 	template <class...>
@@ -22,6 +23,7 @@ namespace jaszyk {
 
 	class json;
 
+
 	using json_array = std::vector<json>;
 	using json_map = flatmap<std::string, json>;
 
@@ -34,21 +36,27 @@ namespace jaszyk {
 		using array = json_array;
 		using number = double;
 		using string = std::string;
+		using boolean = bool;
+		using null = json_null;
+
+		inline json(std::initializer_list<std::pair<const string, json>> _List)
+			: base(json_map(_List))
+		{ }
 
 		inline json(const char* str)
-			: base(std::string(str))
+			: base(string(str))
 		{ }
 
 		inline json(int val)
 			: base(double(val))
 		{ }
 
-		inline json& operator[](const std::string& key) {
+		inline json& operator[](const string& key) {
 			_Check_type<json_map>();
 			return std::get<json_map>(*this)[key];
 		}
 
-		inline const json& operator[](const std::string& key) const {
+		inline const json& operator[](const string& key) const {
 			_Check_type<json_map>();
 			return std::get<json_map>(*this)[key];
 		}
@@ -86,24 +94,30 @@ namespace jaszyk {
 			std::get<json_array>(*this).push_back(_Value);
 		}
 
-		inline bool null() const {
-			static constexpr size_t _Null_idx = index_of<json_null, std::string, double, bool, json_array, json_map, json_null>;
+		inline bool is_null() const {
+			static constexpr size_t _Null_idx = index_of<json_null, string, double, bool, json_array, json_map, json_null>;
 			return index() == _Null_idx;
 		}
 
-		inline std::string to_pretty_string(int _Indent = 4) const {
+		// serialize
+		inline string to_pretty_string(int _Indent = 4) const {
 			return _To_string(1, _Indent);
 		}
 
-		inline std::string to_string() const {
-			std::string str;
+		// serialize
+		inline string to_string() const {
+			string str;
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Write_string_to_string(std::get<std::string>(*this), str);
+				_Write_string_to_string(std::get<string>(*this), str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
+#if defined(_MSC_VER)
+				sprintf_s(_Buff, "%lg", std::get<double>(*this));
+#else
 				sprintf(_Buff, "%lg", std::get<double>(*this));
+#endif
 				str += _Buff;
 			}
 			else if (_Idx == 3) {
@@ -147,6 +161,16 @@ namespace jaszyk {
 			return str;
 		}
 
+		// serialize
+		inline string dump() const {
+			return to_string();
+		}
+
+		// serialize
+		inline string dump(bool _Pretty_print) const {
+			return _Pretty_print ? to_pretty_string() : to_string();
+		}
+
 		// Throws std::runtime_error if parsing fails
 		inline static json parse(std::string_view _Json) {
 			return parse(_Json, false);
@@ -161,6 +185,22 @@ namespace jaszyk {
 			return _Data;
 		}
 
+		inline static json load(std::string_view _Json) {
+			return parse(_Json, false);
+		}
+
+		inline static json load(std::string_view _Json, bool _Try_ignore_small_errors) {
+			return parse(_Json, _Try_ignore_small_errors);
+		}
+
+		inline static json dump(const json& _Data) {
+			return _Data.to_string();
+		}
+
+		inline static json dump(const json& _Data, bool _Pretty_print) {
+			return _Pretty_print ? _Data.to_pretty_string() : _Data.to_string();
+		}
+
 		// Returns true if parsing failed
 		inline static bool parsing_error() {
 			return _Parsing_error;
@@ -173,7 +213,7 @@ namespace jaszyk {
 
 		inline friend std::ostream& operator<<(std::ostream& _Os, const json& _This) {
 			size_t _Idx = _This.index();
-			if (_Idx == 1) _Os << '"' << _This._Escape_string(std::get<std::string>(_This)) << '"';
+			if (_Idx == 1) _Os << '"' << _This._Escape_string(std::get<string>(_This)) << '"';
 			else if (_Idx == 2) _Os << std::get<double>(_This);
 			else if (_Idx == 3) _Os << (std::get<bool>(_This) ? "true" : "false");
 			else if (_Idx == 4) {
@@ -206,9 +246,9 @@ namespace jaszyk {
 		}
 	private:
 		inline static bool _Parsing_error = false;
-		inline static std::string _Error_message;
+		inline static string _Error_message;
 
-		template <class _Ty, size_t I = index_of<_Ty, json_null, std::string, double, bool, json_array, json_map>>
+		template <class _Ty, size_t I = index_of<_Ty, json_null, string, double, bool, json_array, json_map>>
 		inline void _Check_type() const {
 			if (index() == I) return;
 
@@ -218,16 +258,20 @@ namespace jaszyk {
 			throw std::runtime_error("invalid type");
 		}
 
-		inline std::string _To_string(const int _Depth, const int _Indent) const {
-			std::string str;
+		inline string _To_string(const int _Depth, const int _Indent) const {
+			string str;
 
 			size_t _Idx = index();
 			if (_Idx == 1) {
-				_Write_string_to_string(std::get<std::string>(*this), str);
+				_Write_string_to_string(std::get<string>(*this), str);
 			}
 			else if (_Idx == 2) {
 				char _Buff[32];
+#if defined(_MSC_VER)
+				sprintf_s(_Buff, "%lg", std::get<double>(*this));
+#else
 				sprintf(_Buff, "%lg", std::get<double>(*this));
+#endif
 				str += _Buff;
 			}
 			else if (_Idx == 3) {
@@ -246,7 +290,7 @@ namespace jaszyk {
 			return str;
 		}
 
-		inline void _Write_dict_to_string(const json_map& _Dict, const int _Depth, const int _Indent, std::string& _Out) const {
+		inline void _Write_dict_to_string(const json_map& _Dict, const int _Depth, const int _Indent, string& _Out) const {
 			_Out += "{  ";
 			for (const auto& [k, v] : _Dict) {
 				_Out += '\n';
@@ -266,7 +310,7 @@ namespace jaszyk {
 			_Out += "}";
 		}
 
-		inline void _Write_array_to_string(const json_array& _Array, const int _Depth, const int _Indent, std::string& _Out) const {
+		inline void _Write_array_to_string(const json_array& _Array, const int _Depth, const int _Indent, string& _Out) const {
 			_Out += "[  ";
 			for (const auto& v : _Array) {
 				_Out += '\n';
@@ -283,7 +327,7 @@ namespace jaszyk {
 			_Out += "]";
 		}
 
-		inline void _Write_string_to_string(const std::string& _S, std::string& _Out) const {
+		inline void _Write_string_to_string(const string& _S, string& _Out) const {
 			if (!_Requires_rewrite(_S)) {
 				_Out += '"';
 				_Out += _S;
@@ -296,8 +340,8 @@ namespace jaszyk {
 			_Out += '"';
 		}
 
-		inline std::string _Escape_string(const std::string& _S) const {
-			std::string str;
+		inline string _Escape_string(const string& _S) const {
+			string str;
 			str.reserve((size_t)(_S.size() * 1.1f)); // we know there is at least one escape character
 			for (const char& c : _S) {
 				if (c == '\b') str += "\\b";
@@ -312,7 +356,7 @@ namespace jaszyk {
 			return str;
 		}
 
-		inline bool _Requires_rewrite(const std::string& _S) const {
+		inline bool _Requires_rewrite(const string& _S) const {
 			static constexpr char _Escape_chars[] = {'\b', '\f', '\n', '\r', '\t', '\\', '\"'};
 			for (const char& c : _S) {
 				for (const char& e : _Escape_chars) {
@@ -347,7 +391,7 @@ namespace jaszyk {
 				return _Parsing_error;
 			}
 
-			inline std::string& error_message() {
+			inline string& error_message() {
 				return _Error_message;
 			}
 
@@ -371,7 +415,7 @@ namespace jaszyk {
 					if (_Data[_Idx] == '}') break; // end of dictionary
 
 					if (_Data[_Idx] != '"') _Handle_error(_Idx, "Expected '\"'", '"');
-					std::string key = _Parse_string(++_Idx);
+					string key = _Parse_string(++_Idx);
 					if (_Data[_Idx - 1] != '"') _Handle_error(--_Idx, "Expected '\"'", '"');
 
 					_Skip_whitespaces(_Idx);
@@ -423,9 +467,9 @@ namespace jaszyk {
 				return _Array;
 			}
 
-			inline std::string _Parse_string(size_t& _Where) {
+			inline string _Parse_string(size_t& _Where) {
 				size_t _Idx = _Where;
-				std::string _S;
+				string _S;
 				while (_Idx < _Data.length() && _Data[_Idx] != '"') {
 					if (_Data[_Idx] == '\\') {
 						char _Escaped_char = _Decode_escape_char(_Data[++_Idx]);
@@ -585,24 +629,30 @@ namespace jaszyk {
 				if (_Throw) throw std::runtime_error(_Error_message);
 			}
 
-			inline std::string _Build_error(size_t _Error_idx, std::string_view _Info) {
+			inline string _Build_error(size_t _Error_idx, std::string_view _Info) {
 				static constexpr size_t _Max_diff = 35;
 				size_t _Line_begin = _Line_begin_index(_Error_idx);
 				size_t _Line_end = _Line_end_index(_Error_idx);
 				size_t _Line = _Get_line_number(_Error_idx);
 
 				char _Buff[64];
+#if defined(_MSC_VER)
+				sprintf_s(_Buff, "%u", (unsigned int)(_Error_idx - _Line_begin));
+#else
 				sprintf(_Buff, "%u", (unsigned int)(_Error_idx - _Line_begin));
-
-				std::string _Msg;
+#endif
+				string _Msg;
 				_Msg.reserve(128 + _Info.length());
 				_Msg += "Unexpected error at ";
 				_Msg += _Buff;
 				_Msg += " character:\n  ";
 				_Msg += _Info;
 				_Msg += "\n>>>At line ";
-
+#if defined(_MSC_VER)
+				sprintf_s(_Buff, "%u", (unsigned int)_Line);
+#else
 				sprintf(_Buff, "%u", (unsigned int)_Line);
+#endif
 				_Msg += _Buff;
 				_Msg += ": \n>>>";
 
@@ -649,7 +699,7 @@ namespace jaszyk {
 			bool _Ignore_errors;
 			bool _Parsing_error = false;
 			std::string_view _Data;
-			std::string _Error_message;
+			string _Error_message;
 		};
 	};
 }
