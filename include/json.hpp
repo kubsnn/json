@@ -344,14 +344,16 @@ namespace jaszyk {
 			string str;
 			str.reserve((size_t)(_S.size() * 1.1f)); // we know there is at least one escape character
 			for (const char& c : _S) {
-				if (c == '\b') str += "\\b";
-				else if (c == '\f') str += "\\f";
-				else if (c == '\n') str += "\\n";
-				else if (c == '\r') str += "\\r";
-				else if (c == '\t') str += "\\t";
-				else if (c == '\\') str += "\\\\";
-				else if (c == '\"') str += "\\\"";
-				else str += c;
+				switch (c) {
+					case '\b': str += "\\b"; break;
+					case '\f': str += "\\f"; break;
+					case '\n': str += "\\n"; break;
+					case '\r': str += "\\r"; break;
+					case '\t': str += "\\t"; break;
+					case '\\': str += "\\\\"; break;
+					case '\"': str += "\\\""; break;
+					default: str += c; break;
+				}
 			}
 			return str;
 		}
@@ -472,6 +474,10 @@ namespace jaszyk {
 				string _S;
 				while (_Idx < _Data.length() && _Data[_Idx] != '"') {
 					if (_Data[_Idx] == '\\') {
+						if (_Data[_Idx + 1] == 'u') {
+							_S += _Decode_utf8_char_sequence(_Idx);
+							continue;
+						}
 						char _Escaped_char = _Decode_escape_char(_Data[++_Idx]);
 						if (_Escaped_char == -1) { // invalid escape char
 							_Handle_error(_Idx, "Invalid escape char to decode!", '"');
@@ -544,25 +550,70 @@ namespace jaszyk {
 				return json_null();
 			}
 
-			inline void _Skip_whitespaces(size_t& _Where) {
+			inline void _Skip_whitespaces(size_t& _Where) const {
 				size_t _Idx = _Where;
 				while (_Idx < _Data.length() && isspace(_Data[_Idx]))
 					++_Idx;
 				_Where = _Idx;
 			}
 			
-			inline char _Decode_escape_char(char _C) {
+			inline char _Decode_escape_char(char _C) const {
 				switch (_C) {
-				case 'b': return '\b';
-				case 'f': return '\f';
-				case 'n': return '\n';
-				case 'r': return '\r';
-				case 't': return '\t';
-				case '\\': return '\\';
-				case '/': return '/';
-				case '"': return '"';
-				default: return -1;
+					case 'b': return '\b';
+					case 'f': return '\f';
+					case 'n': return '\n';
+					case 'r': return '\r';
+					case 't': return '\t';
+					case '\\': return '\\';
+					case '/': return '/';
+					case '"': return '"';
+					default: return -1;
 				}
+			}
+
+			inline string _Decode_utf8_char_sequence(size_t& _Where) {
+				size_t _Idx = _Where + 2; // skip \u
+				if (_Idx + 4 >= _Data.length()) {
+					_Throw_parsing_error(_Idx, "Unexpected end of file!");
+				}
+
+				auto _Hex_str = string(_Data.substr(_Idx, 4));
+				_Idx += 4;
+
+				for (const char& c : _Hex_str) {
+					if (!isxdigit(c)) {
+						_Throw_parsing_error(_Idx, "Invalid hex digit!");
+					}
+				}
+
+				_Where = _Idx;
+				unsigned int _Hex_val = std::stoul(_Hex_str, nullptr, 16);
+				if (_Hex_val <= 0x7F) { // 1 byte
+					return string(1, (char)_Hex_val);
+				}
+				if (_Hex_val <= 0x7FF) { // 2 bytes
+					string _Str(2, ' ');
+					_Str[0] = (char)(0xC0 | (_Hex_val >> 6));
+					_Str[1] = (char)(0x80 | (_Hex_val & 0x3F));
+					return _Str;
+				}
+				if (_Hex_val <= 0xFFFF) { // 3 bytes
+					string _Str(3, ' ');
+					_Str[0] = (char)(0xE0 | (_Hex_val >> 12));
+					_Str[1] = (char)(0x80 | ((_Hex_val >> 6) & 0x3F));
+					_Str[2] = (char)(0x80 | (_Hex_val & 0x3F));
+					return _Str;
+				}
+				if (_Hex_val <= 0x10FFFF) { // 4 bytes
+					string _Str(4, ' ');
+					_Str[0] = (char)(0xF0 | (_Hex_val >> 18));
+					_Str[1] = (char)(0x80 | ((_Hex_val >> 12) & 0x3F));
+					_Str[2] = (char)(0x80 | ((_Hex_val >> 6) & 0x3F));
+					_Str[3] = (char)(0x80 | (_Hex_val & 0x3F));
+					return _Str;
+				}
+				_Throw_parsing_error(_Idx, "Invalid hex value!");
+				return string();
 			}
 
 			inline void _Try_skip_error(size_t& _Where, char _Expected_char1, char _Expected_char2) {
