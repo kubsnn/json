@@ -181,12 +181,12 @@ namespace jaszyk {
 			return _Pretty_print ? to_pretty_string() : to_string();
 		}
 
-		// Throws std::runtime_error if parsing fails
+		// Throws json::exception if parsing fails
 		inline static json parse(std::string_view _Json) {
 			return parse(_Json, false);
 		}
 
-		// Throws std::runtime_error if parsing fails
+		// Throws json::exception if parsing fails
 		inline static json parse(std::string_view _Json, bool _Try_ignore_small_errors) {
 			json_parser _Parser(_Json);
 			json _Data = _Parser.parse(_Try_ignore_small_errors);
@@ -263,9 +263,9 @@ namespace jaszyk {
 			if (index() == I) return;
 
 			static constexpr const char* types[] = { "null", "string", "float", "bool", "array", "dictionary" };
-			std::cerr << "expected <" << types[index()] << ">, but <" << types[I] << "> was given" << std::endl;
+			std::cerr << "expected <" << types[I] << ">, but <" << types[index()] << "> was given" << std::endl;
 
-			throw std::runtime_error("invalid type");
+			throw std::bad_variant_access();
 		}
 
 		inline string _To_string(const int _Depth, const int _Indent) const {
