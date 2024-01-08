@@ -262,8 +262,8 @@ namespace jaszyk {
 		inline void _Check_type() const {
 			if (index() == I) return;
 
-			static constexpr const char* types[] = { "null", "string", "float", "bool", "array", "dictionary" };
-			std::cerr << "expected <" << types[I] << ">, but <" << types[index()] << "> was given" << std::endl;
+			// static constexpr const char* types[] = { "null", "string", "float", "bool", "array", "dictionary" };
+			// std::cerr << "expected <" << types[I] << ">, but <" << types[index()] << "> was given" << std::endl;
 
 			throw std::bad_variant_access();
 		}
