@@ -8,8 +8,17 @@
 #include <variant>
 #include "flatmap.hpp"
 #include <initializer_list>
+#include <stdexcept>
 
 namespace jaszyk {
+
+	class json_parsing_exception : public std::runtime_error {
+	public:
+		inline json_parsing_exception(const std::string& _Message)
+			: std::runtime_error(_Message)
+		{ }
+	};
+
 	template <class...>
 	constexpr size_t index_of = -255;
 
@@ -38,6 +47,7 @@ namespace jaszyk {
 		using string = std::string;
 		using boolean = bool;
 		using null = json_null;
+		using exception = json_parsing_exception;
 
 		inline json(std::initializer_list<std::pair<const string, json>> _List)
 			: base(json_map(_List))
@@ -626,7 +636,7 @@ namespace jaszyk {
 			inline void _Throw_parsing_error(size_t _Where, std::string_view _Message, bool _Throw = true) {
 				_Error_message = _Build_error(_Where, _Message);
 				_Parsing_error = true;
-				if (_Throw) throw std::runtime_error(_Error_message);
+				if (_Throw) throw json::exception(_Error_message);
 			}
 
 			inline string _Build_error(size_t _Error_idx, std::string_view _Info) {

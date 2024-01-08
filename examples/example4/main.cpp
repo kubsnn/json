@@ -21,7 +21,7 @@ int main()
     try {
         auto json = json::parse(json_with_error);
 	}
-	catch (const std::runtime_error& e) {
+	catch (const json::exception& e) {
 		std::cout << e.what() << std::endl;
 	}
 }
